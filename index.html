@@ -34,24 +34,26 @@
           border: 'var(--border)',
           accent: 'var(--accent)',
         },
-        boxShadow: { glow: '0 0 60px -10px oklch(0.84 0.17 95 / 0.35)' },
+        boxShadow: { 
+          glow: '0 0 30px -5px var(--primary)',
+          cardGlow: '0 10px 30px -15px rgba(0,0,0,0.7)'
+        },
       },
     },
   };
 </script>
 <style>
   :root{
-    --background: oklch(0.16 0.015 250);
+    --background: oklch(0.14 0.015 250);
     --foreground: oklch(0.96 0.005 250);
-    --card: oklch(0.21 0.018 250);
+    --card: oklch(0.19 0.018 250);
     --card-foreground: oklch(0.96 0.005 250);
-    --primary: oklch(0.84 0.17 95);
-    --primary-foreground: oklch(0.16 0.015 250);
-    --muted: oklch(0.24 0.02 250);
+    --primary: oklch(0.84 0.17 95); 
+    --primary-foreground: oklch(0.14 0.015 250);
+    --muted: oklch(0.22 0.02 250);
     --muted-foreground: oklch(0.72 0.018 250);
     --accent: oklch(0.78 0.14 195);
-    --border: oklch(0.3 0.02 250);
-    --gradient-text: linear-gradient(135deg, oklch(0.84 0.17 95), oklch(0.78 0.14 195));
+    --border: oklch(0.28 0.02 250);
   }
   html{scroll-behavior:smooth}
   body{
@@ -60,19 +62,36 @@
     font-family:"Space Grotesk", ui-sans-serif, system-ui, sans-serif;
     -webkit-font-smoothing:antialiased;
     background-image:
-      radial-gradient(ellipse 80% 50% at 50% -20%, oklch(0.84 0.17 95 / 0.08), transparent),
-      radial-gradient(ellipse 60% 50% at 80% 100%, oklch(0.78 0.14 195 / 0.06), transparent);
+      radial-gradient(ellipse 80% 50% at 50% -20%, color-mix(in oklch, var(--primary) 12%, transparent), transparent),
+      radial-gradient(ellipse 60% 50% at 80% 100%, color-mix(in oklch, var(--accent) 8%, transparent), transparent);
     background-attachment:fixed;
   }
-  ::selection{background:oklch(0.84 0.17 95 / 0.3); color:var(--foreground)}
-  .text-gradient{background:var(--gradient-text); -webkit-background-clip:text; background-clip:text; color:transparent}
+  ::selection{background:color-mix(in oklch, var(--primary) 30%, transparent); color:var(--foreground)}
+  .text-gradient {
+    background: linear-gradient(135deg, var(--primary), var(--accent)); 
+    -webkit-background-clip:text; 
+    background-clip:text; 
+    color:transparent
+  }
   .font-mono{font-family:"JetBrains Mono", ui-monospace, monospace}
   .icon{width:1em;height:1em;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:inline-block;vertical-align:-0.125em}
+  
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: var(--background); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
+
+  .tilt-card {
+    transform-style: preserve-3d;
+    perspective: 1000px;
+    transition: transform 0.1s ease, border-color 0.3s ease;
+  }
 </style>
 </head>
-<body class="min-h-screen">
+<body class="min-h-screen relative selection:bg-amber-500/20">
 
-<!-- Inline SVG icon sprite -->
+<div id="progress-bar" class="fixed top-0 left-0 h-[3px] z-[60] transition-all duration-75 w-0" style="background: var(--primary)"></div>
+
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
     <symbol id="i-mail" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></symbol>
@@ -91,65 +110,83 @@
     <symbol id="i-brief" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></symbol>
     <symbol id="i-award" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89 7 22l5-3 5 3-1.21-8.11"/></symbol>
     <symbol id="i-lang" viewBox="0 0 24 24"><path d="m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6"/></symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></symbol>
+    <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="8" x2="6" y2="8"/><line x1="10" y1="8" x2="10" y2="8"/><line x1="14" y1="8" x2="14" y2="8"/><line x1="18" y1="8" x2="18" y2="8"/><line x1="6" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="18" y2="12"/><line x1="7" y1="16" x2="17" y2="16"/></symbol>
   </defs>
 </svg>
 
-<!-- Nav -->
 <header class="sticky top-0 z-50 border-b border-[color:var(--border)]/40 backdrop-blur-xl" style="background:color-mix(in oklch, var(--background) 70%, transparent)">
   <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 sm:px-8">
-    <a href="#top" class="flex items-center gap-2 font-mono text-sm">
-      <span class="grid h-8 w-8 place-items-center rounded-md font-bold" style="background:var(--primary);color:var(--primary-foreground)">KR</span>
-      <span class="hidden sm:inline" style="color:var(--muted-foreground)">K-rajesh.dev</span>
+    <a href="#top" class="flex items-center gap-2 font-mono text-sm group">
+      <span class="grid h-8 w-8 place-items-center rounded-md font-bold transition-transform group-hover:scale-110" style="background:var(--primary);color:var(--primary-foreground)">KR</span>
+      <span class="hidden sm:inline transition-colors group-hover:text-[color:var(--foreground)]" style="color:var(--muted-foreground)">K-rajesh.dev</span>
     </a>
-    <nav class="hidden gap-6 md:flex">
+    <nav class="hidden gap-6 md:flex items-center">
       <a href="#about" class="text-sm transition-colors hover:text-[color:var(--foreground)]" style="color:var(--muted-foreground)">About</a>
       <a href="#experience" class="text-sm transition-colors hover:text-[color:var(--foreground)]" style="color:var(--muted-foreground)">Experience</a>
       <a href="#projects" class="text-sm transition-colors hover:text-[color:var(--foreground)]" style="color:var(--muted-foreground)">Projects</a>
+      <a href="#terminal-section" class="text-sm transition-colors hover:text-[color:var(--foreground)]" style="color:var(--muted-foreground)">Terminal</a>
       <a href="#skills" class="text-sm transition-colors hover:text-[color:var(--foreground)]" style="color:var(--muted-foreground)">Skills</a>
       <a href="#contact" class="text-sm transition-colors hover:text-[color:var(--foreground)]" style="color:var(--muted-foreground)">Contact</a>
     </nav>
-    <a href="mailto:rajeshkumar23112006@gmail.com"
-       class="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-all hover:bg-[color:var(--primary)] hover:text-[color:var(--primary-foreground)]"
-       style="border-color:color-mix(in oklch, var(--primary) 40%, transparent); background:color-mix(in oklch, var(--primary) 10%, transparent); color:var(--primary)">
-      Get in touch <svg class="icon" style="font-size:.875rem"><use href="#i-arrow"/></svg>
-    </a>
+    
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-1.5 bg-neutral-900/60 p-1.5 rounded-md border border-[color:var(--border)]">
+        <button onclick="setAccent('gold')" class="w-3 h-3 rounded-full bg-amber-400" title="Amber Accent"></button>
+        <button onclick="setAccent('cyan')" class="w-3 h-3 rounded-full bg-cyan-400" title="Cyan Accent"></button>
+        <button onclick="setAccent('purple')" class="w-3 h-3 rounded-full bg-purple-400" title="Purple Accent"></button>
+      </div>
+
+      <a href="#contact"
+         class="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-all hover:bg-[color:var(--primary)] hover:text-[color:var(--primary-foreground)] hover:shadow-glow"
+         style="border-color:color-mix(in oklch, var(--primary) 40%, transparent); background:color-mix(in oklch, var(--primary) 10%, transparent); color:var(--primary)">
+        Get in touch <svg class="icon" style="font-size:.875rem"><use href="#i-arrow"/></svg>
+      </a>
+    </div>
   </div>
 </header>
 
 <main class="mx-auto max-w-6xl px-6 sm:px-8">
 
-  <!-- Hero -->
   <section id="top" class="relative py-24 sm:py-32">
     <div class="flex flex-col gap-6">
-      <span class="inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1 font-mono text-xs" style="border-color:var(--border); background:color-mix(in oklch, var(--card) 50%, transparent); color:var(--muted-foreground)">
-        <span class="h-2 w-2 animate-pulse rounded-full" style="background:var(--primary)"></span>
-        Available for full stack opportunities
-      </span>
+      <div class="flex flex-wrap items-center gap-3">
+        <span class="inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1 font-mono text-xs" style="border-color:var(--border); background:color-mix(in oklch, var(--card) 50%, transparent); color:var(--muted-foreground)">
+          <span class="h-2 w-2 animate-pulse rounded-full" style="background:var(--primary)"></span>
+          Available for full stack opportunities
+        </span>
+        <span id="time-ticker" class="font-mono text-xs opacity-60 bg-neutral-900/40 border border-neutral-800/80 px-2 py-1 rounded-md"></span>
+        
+        <span class="hidden lg:inline-flex items-center gap-2 font-mono text-xs text-neutral-500 bg-neutral-900/40 border border-neutral-800/80 px-2.5 py-1 rounded-md">
+          <svg class="icon"><use href="#i-keyboard"/></svg>
+          Hotkeys: <kbd class="px-1 bg-neutral-800 text-neutral-300 rounded border border-neutral-700">T</kbd> Terminal · <kbd class="px-1 bg-neutral-800 text-neutral-300 rounded border border-neutral-700">P</kbd> Cycle Filter
+        </span>
+      </div>
+      
       <h1 class="text-5xl font-bold leading-[1.05] tracking-tight sm:text-7xl md:text-8xl">
         K. Rajesh.<br/>
-        <span class="text-gradient">Building practical,</span><br/>
+        <span class="text-gradient inline-block min-w-[300px]" id="typewriter-text">Building practical,</span><br/>
         <span style="color:var(--muted-foreground)">user-centric software.</span>
       </h1>
       <p class="max-w-2xl text-lg sm:text-xl" style="color:var(--muted-foreground)">
-        Computer Science Engineering student at Centurion University and SDE Intern at Bluestock Fintech. I work across web development, cloud infrastructure, robotics, and IoT — and love shipping things that feel good to use.
+        Computer Science Engineering student at Centurion University and Frontend UI/UX Developer Intern at Hexmon Technologies. I work across web systems, cloud infrastructure, robotics, and IoT.
       </p>
       <div class="mt-2 flex flex-wrap gap-3">
-        <a href="#projects" class="inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold transition-all hover:opacity-90 hover:shadow-glow" style="background:var(--primary);color:var(--primary-foreground)">
+        <a href="#projects" class="inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold transition-all hover:opacity-90 hover:scale-[1.02] hover:shadow-glow" style="background:var(--primary);color:var(--primary-foreground)">
           See my work <svg class="icon"><use href="#i-arrow"/></svg>
         </a>
-        <a href="#contact" class="inline-flex items-center gap-2 rounded-md border px-5 py-2.5 text-sm font-semibold transition-colors" style="border-color:var(--border); background:color-mix(in oklch, var(--card) 50%, transparent); color:var(--foreground)">
-          Contact me
+        <a href="#terminal-section" class="inline-flex items-center gap-2 rounded-md border px-5 py-2.5 text-sm font-semibold transition-all hover:bg-neutral-800" style="border-color:var(--border); background:color-mix(in oklch, var(--card) 50%, transparent); color:var(--foreground)">
+          Try Terminal <svg class="icon"><use href="#i-terminal"/></svg>
         </a>
       </div>
       <div class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-xs" style="color:var(--muted-foreground)">
-        <span class="flex items-center gap-1.5"><svg class="icon"><use href="#i-pin"/></svg> Khurda, Odisha, India</span>
-        <span class="flex items-center gap-1.5"><svg class="icon"><use href="#i-phone"/></svg> +91 7855021303</span>
-        <span class="flex items-center gap-1.5"><svg class="icon"><use href="#i-mail"/></svg> rajeshkumar23112006@gmail.com</span>
+        <span class="flex items-center gap-1.5 hover:text-[color:var(--foreground)] transition-colors"><svg class="icon"><use href="#i-pin"/></svg> Khurda, Odisha, India</span>
+        <a href="tel:+917855021303" class="flex items-center gap-1.5 hover:text-[color:var(--foreground)] transition-colors"><svg class="icon"><use href="#i-phone"/></svg> +91 7855021303</a>
+        <a href="mailto:rajeshkumar23112006@gmail.com" class="flex items-center gap-1.5 hover:text-[color:var(--foreground)] transition-colors"><svg class="icon"><use href="#i-mail"/></svg> rajeshkumar23112006@gmail.com</a>
       </div>
     </div>
   </section>
 
-  <!-- About -->
   <section id="about" class="border-t py-20 sm:py-28" style="border-color:color-mix(in oklch, var(--border) 40%, transparent)">
     <div class="mb-12 flex flex-col gap-2">
       <span class="font-mono text-xs uppercase tracking-widest" style="color:var(--primary)">01 — About</span>
@@ -157,20 +194,20 @@
     </div>
     <div class="grid gap-10 md:grid-cols-3">
       <p class="md:col-span-2 text-lg leading-relaxed" style="color:var(--muted-foreground)">
-        Motivated Computer Science Engineering student with hands-on experience in web development, cloud infrastructure, robotics, and IoT. Recently completed an SDE internship at <span style="color:var(--foreground)">Bluestock Fintech</span>, contributing to product design, UI workflows, and scalable frontend systems. Passionate about building practical, user-centric solutions and eager to grow as a <span style="color:var(--foreground)"> Cloud Engineer</span>.
+        Motivated Computer Science Engineering student with hands-on experience in web development, cloud infrastructure, robotics, and IoT. Currently a Frontend UI/UX Developer Intern at <span style="color:var(--foreground)">Hexmon Technologies</span> and formerly at <span style="color:var(--foreground)">Bluestock Fintech</span>. Eagerly scaling production workflows, interactive interfaces, and seeking directions to grow into a versatile <span style="color:var(--foreground)">Cloud Engineer</span>.
       </p>
-      <div class="rounded-lg border p-6" style="border-color:var(--border);background:var(--card)">
+      <div class="rounded-lg border p-6 transition-transform hover:scale-[1.02] shadow-cardGlow" style="border-color:var(--border);background:var(--card)">
         <p class="font-mono text-xs uppercase tracking-widest" style="color:var(--muted-foreground)">Currently</p>
         <p class="mt-2 font-semibold">B.Tech CSE @ Centurion University</p>
         <p class="text-sm" style="color:var(--muted-foreground)">2024 — 2028 · GPA 7.78</p>
-        <div class="mt-4 flex items-center gap-2 font-mono text-xs" style="color:var(--primary)">
-          <svg class="icon"><use href="#i-lang"/></svg> English · Hindi · Telugu · Odia
+        <div class="mt-4 flex flex-wrap gap-2 font-mono text-xs" style="color:var(--primary)">
+          <svg class="icon mt-0.5"><use href="#i-lang"/></svg> 
+          <span>English · Hindi · Telugu · Odia</span>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Experience -->
   <section id="experience" class="border-t py-20 sm:py-28" style="border-color:color-mix(in oklch, var(--border) 40%, transparent)">
     <div class="mb-12 flex flex-col gap-2">
       <span class="font-mono text-xs uppercase tracking-widest" style="color:var(--primary)">02 — Experience</span>
@@ -179,30 +216,63 @@
     <div class="space-y-8" id="exp-list"></div>
   </section>
 
-  <!-- Projects -->
   <section id="projects" class="border-t py-20 sm:py-28" style="border-color:color-mix(in oklch, var(--border) 40%, transparent)">
-    <div class="mb-12 flex flex-col gap-2">
-      <span class="font-mono text-xs uppercase tracking-widest" style="color:var(--primary)">03 — Projects</span>
-      <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">Selected work</h2>
+    <div class="mb-12 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+      <div class="flex flex-col gap-2">
+        <span class="font-mono text-xs uppercase tracking-widest" style="color:var(--primary)">03 — Projects</span>
+        <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">Selected work</h2>
+      </div>
+      <div class="flex flex-wrap gap-2 font-mono text-xs" id="filter-controls">
+        <button id="btn-filter-all" onclick="filterProjects('all')" class="filter-btn px-3 py-1.5 rounded-md border bg-neutral-800 border-neutral-700 text-white transition-all">All</button>
+        <button id="btn-filter-cloud" onclick="filterProjects('cloud')" class="filter-btn px-3 py-1.5 rounded-md border border-neutral-800 text-neutral-400 hover:text-white transition-all">Cloud &amp; Deployment</button>
+        <button id="btn-filter-robotics" onclick="filterProjects('robotics')" class="filter-btn px-3 py-1.5 rounded-md border border-neutral-800 text-neutral-400 hover:text-white transition-all">Robotics/IoT</button>
+        <button id="btn-filter-ml" onclick="filterProjects('ml')" class="filter-btn px-3 py-1.5 rounded-md border border-neutral-800 text-neutral-400 hover:text-white transition-all">Machine Learning</button>
+      </div>
     </div>
     <div class="grid gap-6 md:grid-cols-2" id="proj-list"></div>
   </section>
 
-  <!-- Skills -->
+  <section id="terminal-section" class="border-t py-20 sm:py-28" style="border-color:color-mix(in oklch, var(--border) 40%, transparent)">
+    <div class="mb-12 flex flex-col gap-2">
+      <span class="font-mono text-xs uppercase tracking-widest" style="color:var(--primary)">04 — Interactive Sandbox</span>
+      <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">Developer Terminal</h2>
+      <p class="text-sm max-w-xl" style="color:var(--muted-foreground)">Type directly into the console sandbox below to query my database endpoints in real time. (Or hit <kbd class="px-1 text-xs bg-neutral-800 rounded text-neutral-400">T</kbd> anywhere to focus)</p>
+    </div>
+    
+    <div class="w-full rounded-xl border overflow-hidden shadow-2xl" style="border-color:var(--border); background:#0c0e12">
+      <div class="flex items-center justify-between px-4 py-3 bg-neutral-900 border-b border-neutral-800 font-mono text-xs text-neutral-400">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
+          <span class="w-3 h-3 rounded-full bg-yellow-500/80"></span>
+          <span class="w-3 h-3 rounded-full bg-green-500/80"></span>
+          <span class="ml-2 font-medium">guest@k-rajesh.dev:~</span>
+        </div>
+        <span>bash 5.2</span>
+      </div>
+      <div id="terminal-body" class="p-5 font-mono text-xs sm:text-sm h-64 overflow-y-auto space-y-2 text-emerald-400/90 selection:bg-emerald-500/20">
+        <div>Welcome to Rajesh's dynamic profile node. Type <span class="text-amber-400 font-bold">help</span> to view available system procedures.</div>
+      </div>
+      <div class="flex items-center gap-2 px-5 pb-5 font-mono text-xs sm:text-sm bg-transparent">
+        <span class="text-cyan-400 shrink-0">k-rajesh.dev $</span>
+        <input type="text" id="terminal-input" class="w-full bg-transparent border-none outline-none text-white focus:ring-0 p-0" placeholder="Type a command..." autocomplete="off"/>
+      </div>
+    </div>
+  </section>
+
   <section id="skills" class="border-t py-20 sm:py-28" style="border-color:color-mix(in oklch, var(--border) 40%, transparent)">
     <div class="mb-12 flex flex-col gap-2">
-      <span class="font-mono text-xs uppercase tracking-widest" style="color:var(--primary)">04 — Skills</span>
+      <span class="font-mono text-xs uppercase tracking-widest" style="color:var(--primary)">05 — Skills</span>
       <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">Tools &amp; tech I use</h2>
     </div>
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" id="skills-list"></div>
     <div class="mt-8 grid gap-4 sm:grid-cols-2">
-      <div class="rounded-xl border p-6" style="border-color:var(--border);background:color-mix(in oklch, var(--card) 50%, transparent)">
+      <div class="rounded-xl border p-6 transition-all hover:scale-[1.01]" style="border-color:var(--border);background:color-mix(in oklch, var(--card) 50%, transparent)">
         <p class="mb-3 flex items-center gap-2 font-mono text-xs uppercase tracking-widest" style="color:var(--primary)">
           <svg class="icon"><use href="#i-spark"/></svg> Soft Skills
         </p>
-        <p style="color:var(--muted-foreground)">Teamwork · Communication · Creativity · Problem-Solving</p>
+        <p style="color:var(--muted-foreground)">Teamwork · Communication · Creativity · Critical Problem-Solving</p>
       </div>
-      <div class="rounded-xl border p-6" style="border-color:var(--border);background:color-mix(in oklch, var(--card) 50%, transparent)">
+      <div class="rounded-xl border p-6 transition-all hover:scale-[1.01]" style="border-color:var(--border);background:color-mix(in oklch, var(--card) 50%, transparent)">
         <p class="mb-3 flex items-center gap-2 font-mono text-xs uppercase tracking-widest" style="color:var(--primary)">
           <svg class="icon"><use href="#i-award"/></svg> Certifications
         </p>
@@ -211,34 +281,32 @@
     </div>
   </section>
 
-  <!-- Education -->
   <section id="education" class="border-t py-20 sm:py-28" style="border-color:color-mix(in oklch, var(--border) 40%, transparent)">
     <div class="mb-12 flex flex-col gap-2">
-      <span class="font-mono text-xs uppercase tracking-widest" style="color:var(--primary)">05 — Education</span>
+      <span class="font-mono text-xs uppercase tracking-widest" style="color:var(--primary)">06 — Education</span>
       <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">Academic background</h2>
     </div>
     <div class="space-y-4" id="edu-list"></div>
   </section>
 
-  <!-- Contact -->
   <section id="contact" class="border-t py-24 sm:py-32" style="border-color:color-mix(in oklch, var(--border) 40%, transparent)">
-    <div class="rounded-2xl border p-10 text-center sm:p-16" style="border-color:color-mix(in oklch, var(--primary) 30%, transparent); background:color-mix(in oklch, var(--card) 60%, transparent)">
-      <span class="font-mono text-xs uppercase tracking-widest" style="color:var(--primary)">06 — Contact</span>
+    <div class="rounded-2xl border p-10 text-center sm:p-16 transition-all hover:border-[color:var(--primary)]/60 shadow-glow" style="border-color:color-mix(in oklch, var(--primary) 20%, transparent); background:color-mix(in oklch, var(--card) 60%, transparent)">
+      <span class="font-mono text-xs uppercase tracking-widest" style="color:var(--primary)">07 — Contact</span>
       <h2 class="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">Let's build something together.</h2>
-      <p class="mx-auto mt-4 max-w-xl" style="color:var(--muted-foreground)">Open to internships, freelance work, and collaboration on interesting web, cloud, or IoT projects. The fastest way to reach me is email.</p>
+      <p class="mx-auto mt-4 max-w-xl" style="color:var(--muted-foreground)">Open to production engineering opportunities, freelance architecture, and collaboration on custom cloud or edge IoT workflows.</p>
       <div class="mt-8 flex flex-wrap justify-center gap-3">
-        <a href="mailto:rajeshkumar23112006@gmail.com" class="inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold transition-all hover:opacity-90 hover:shadow-glow" style="background:var(--primary);color:var(--primary-foreground)">
+        <a href="mailto:rajeshkumar23112006@gmail.com" class="inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold transition-all hover:opacity-90 hover:scale-105 hover:shadow-glow" style="background:var(--primary);color:var(--primary-foreground)">
           <svg class="icon"><use href="#i-mail"/></svg> rajeshkumar23112006@gmail.com
         </a>
-        <a href="tel:+917855021303" class="inline-flex items-center gap-2 rounded-md border px-5 py-2.5 text-sm font-semibold transition-colors" style="border-color:var(--border);background:color-mix(in oklch, var(--background) 60%, transparent)">
+        <a href="tel:+917855021303" class="inline-flex items-center gap-2 rounded-md border px-5 py-2.5 text-sm font-semibold transition-all hover:bg-neutral-800" style="border-color:var(--border);background:color-mix(in oklch, var(--background) 60%, transparent)">
           <svg class="icon"><use href="#i-phone"/></svg> +91 7855021303
         </a>
       </div>
       <div class="mt-8 flex justify-center gap-4">
-        <a href="https://linkedin.com/in/k-rajesh-4ba36a2a4" target="_blank" rel="noreferrer" aria-label="LinkedIn" class="grid h-10 w-10 place-items-center rounded-full border transition-colors hover:text-[color:var(--primary)]" style="border-color:var(--border);color:var(--muted-foreground)">
+        <a href="https://linkedin.com/in/k-rajesh-4ba36a2a4" target="_blank" rel="noreferrer" aria-label="LinkedIn" class="grid h-10 w-10 place-items-center rounded-full border transition-all hover:text-[color:var(--primary)] hover:border-[color:var(--primary)] hover:scale-110" style="border-color:var(--border);color:var(--muted-foreground)">
           <svg class="icon"><use href="#i-linkedin"/></svg>
         </a>
-        <a href="https://github.com/Rajesh-kumar" target="_blank" rel="noreferrer" aria-label="GitHub" class="grid h-10 w-10 place-items-center rounded-full border transition-colors hover:text-[color:var(--primary)]" style="border-color:var(--border);color:var(--muted-foreground)">
+        <a href="https://github.com/Rajesh-kumar" target="_blank" rel="noreferrer" aria-label="GitHub" class="grid h-10 w-10 place-items-center rounded-full border transition-all hover:text-[color:var(--primary)] hover:border-[color:var(--primary)] hover:scale-110" style="border-color:var(--border);color:var(--muted-foreground)">
           <svg class="icon"><use href="#i-github"/></svg>
         </a>
       </div>
@@ -248,7 +316,7 @@
 
 <footer class="mt-20 border-t" style="border-color:color-mix(in oklch, var(--border) 40%, transparent)">
   <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 py-8 sm:flex-row sm:px-8">
-    <p class="font-mono text-xs" style="color:var(--muted-foreground)">© <span id="yr"></span> K. Rajesh. Built with care.</p>
+    <p class="font-mono text-xs" style="color:var(--muted-foreground)">© <span id="yr"></span> K. Rajesh. Engineered with precision.</p>
     <p class="font-mono text-xs" style="color:var(--muted-foreground)">Khurda, Odisha · India</p>
   </div>
 </footer>
@@ -256,27 +324,98 @@
 <script>
   document.getElementById('yr').textContent = new Date().getFullYear();
 
+  function setAccent(color) {
+    const root = document.documentElement;
+    if (color === 'gold') {
+      root.style.setProperty('--primary', 'oklch(0.84 0.17 95)');
+      root.style.setProperty('--accent', 'oklch(0.78 0.14 195)');
+    } else if (color === 'cyan') {
+      root.style.setProperty('--primary', 'oklch(0.78 0.16 200)');
+      root.style.setProperty('--accent', 'oklch(0.72 0.18 260)');
+    } else if (color === 'purple') {
+      root.style.setProperty('--primary', 'oklch(0.70 0.21 310)');
+      root.style.setProperty('--accent', 'oklch(0.80 0.12 140)');
+    }
+  }
+
+  window.addEventListener('scroll', () => {
+    const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    const scrolled = (winScroll / height) * 100;
+    document.getElementById('progress-bar').style.width = scrolled + '%';
+  });
+
+  setInterval(() => {
+    const options = { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+    const localTime = new Date().toLocaleTimeString('en-US', options);
+    document.getElementById('time-ticker').innerHTML = `IST: ${localTime} · Active`;
+  }, 1000);
+
+  const textOptions = ["Building practical,", "Designing embedded,", "Optimizing scalable,", "Deploying standard,"];
+  let currentWordIdx = 0;
+  let characterIdx = 0;
+  let isDeleting = false;
+  const typewriterElement = document.getElementById('typewriter-text');
+
+  function runTypewriterCycle() {
+    const currentWord = textOptions[currentWordIdx];
+    if (isDeleting) {
+      characterIdx--;
+    } else {
+      characterIdx++;
+    }
+    typewriterElement.textContent = currentWord.substring(0, characterIdx);
+
+    let speed = isDeleting ? 40 : 80;
+
+    if (!isDeleting && characterIdx === currentWord.length) {
+      speed = 1800; 
+      isDeleting = true;
+    } else if (isDeleting && characterIdx === 0) {
+      isDeleting = false;
+      currentWordIdx = (currentWordIdx + 1) % textOptions.length;
+      speed = 400; 
+    }
+    setTimeout(runTypewriterCycle, speed);
+  }
+  setTimeout(runTypewriterCycle, 1000);
+
+  function appendTiltLogic(element) {
+    element.addEventListener('mousemove', (e) => {
+      const rect = element.getBoundingClientRect();
+      const coordX = e.clientX - rect.left - rect.width / 2;
+      const coordY = e.clientY - rect.top - rect.height / 2;
+      const rotationDegreeX = (coordY / (rect.height / 2)) * -6; 
+      const rotationDegreeY = (coordX / (rect.width / 2)) * 6;
+      element.style.transform = `rotateX(${rotationDegreeX}deg) rotateY(${rotationDegreeY}deg) translateY(-4px)`;
+    });
+
+    element.addEventListener('mouseleave', () => {
+      element.style.transform = 'rotateX(0deg) rotateY(0deg) translateY(0px)';
+    });
+  }
+
   const EXPERIENCE = [
     { role:"Frontend UI/UX Developer Intern", company:"Hexmon Technologies", location:"Remote", period:"Jun 2026 – Present",
-      points:["Improved UI/UX across 8+ major platform modules.","Developed responsive dashboards and reusable frontend components.","Built a Kanban-style task management interface.","Enhanced Resources, AI Coach, QA Test Center, Mentor Dashboard, and Docs Hub.","Optimized frontend performance, accessibility, and user experience."] },
+      points:["Improved UI/UX across 8+ major enterprise product workflows.","Developed responsive dashboards and reusable component infrastructure using modular layout systems.","Built a custom card-based visual process queue interface minimizing client view-latency.","Optimized core user journey metrics across system Docs Hubs and analytical engines."] },
     { role:"Software Development Engineer (SDE) Intern", company:"Bluestock Fintech", location:"Remote", period:"Mar 2026 — Apr 2026",
-      points:["Contributed to UI/UX and product design workflows across web and mobile applications.","Built gamified engagement systems: daily puzzles, streak tracking, GitHub-style activity heatmaps.","Designed responsive, mobile-first interfaces for interactive digital products.","Collaborated on frontend planning for onboarding flows, dashboards, and engagement features.","Shipped capstone work focused on scalable client-side, offline-first architecture using React.js & IndexedDB."] },
+      points:["Contributed to UI/UX validation flows across cross-platform mobile apps.","Built gamified systems including custom logic pipelines tracking client consistency charts.","Shipped custom web modules leveraging client-side caching solutions to maximize data processing speeds."] },
   ];
 
   const PROJECTS = [
-    { year:"2025", title:"Cancer Prediction Model", stack:["Python","Pandas","Scikit-learn"], description:"ML classification model that predicts cancer diagnosis from medical datasets. Handled preprocessing, feature selection, and accuracy evaluation across classification metrics." },
-    { year:"2026", title:"Robotic Arm using ESP32", stack:["ESP32","Servo Motors","C++"], description:"4-joint robotic arm controlling base, shoulder, elbow, and gripper. Strengthened embedded systems, real-time control, and automation fundamentals." },
-    { year:"2025", title:"Quadruped Spider Robot", stack:["ESP32-CAM","HTML/CSS","IoT"], description:"4-legged spider robot with a live HTML/CSS web control interface and servo-based gait programming streamed from an ESP32-CAM." },
-    { year:"2025", title:"Agrica — E-Commerce for Farmers", stack:["AWS Lightsail","PrestaShop","Razorpay"], description:"Full-featured agriculture e-commerce platform deployed on AWS Lightsail using PrestaShop, with Razorpay integration for secure payments." },
+    { year:"2025", category:"ml", title:"Cancer Prediction Model", stack:["Python","Pandas","Scikit-learn"], description:"ML classification model that predicts cancer diagnosis from medical datasets. Handled preprocessing, feature selection, and accuracy evaluation across classification metrics." },
+    { year:"2026", category:"robotics", title:"Robotic Arm using ESP32", stack:["ESP32","Servo Motors","C++"], description:"4-joint robotic arm controlling base, shoulder, elbow, and gripper. Strengthened embedded systems, real-time control, and automation fundamentals." },
+    { year:"2025", category:"robotics", title:"Quadruped Spider Robot", stack:["ESP32-CAM","HTML/CSS","IoT"], description:"4-legged spider robot with a live HTML/CSS web control interface and servo-based gait programming streamed from an ESP32-CAM." },
+    { year:"2025", category:"cloud", title:"Agrica — E-Commerce for Farmers", stack:["AWS Lightsail","PrestaShop","Razorpay"], description:"Full-featured agriculture e-commerce platform deployed on AWS Lightsail using PrestaShop, with Razorpay integration for secure payments." },
   ];
 
   const SKILLS = [
-    { icon:"i-code",  title:"Programming",      items:["Python (Intermediate)","Java (Basic)","C (Basic)","C++"] },
-    { icon:"i-globe", title:"Web Development",  items:["HTML","CSS","React.js","Basic UI Design","React js , Typescript"] },
-    { icon:"i-spark", title:"UI/UX & Product",  items:["Gamification Design","Engagement Systems","Client-Side Architecture\nTypeScript and React js"] },
-    { icon:"i-cloud", title:"Cloud & Tools",    items:["AWS Lightsail","AWS S3 , AWS Prestashop , AWS EC2 , AWS VPC , AWS EBS","And other Cloud Services"] },
-    { icon:"i-cpu",   title:"Robotics & IoT",   items:["ESP32","ESP32-CAM","Servo Motors","Sensors , ESP8266, Arduino IDE"] },
-    { icon:"i-db",    title:"Networking & DB",  items:["Networking Basics","MySQL"] },
+    { icon:"i-code",  title:"Programming",      items:["Python","C++","Java (Basic)","C"] },
+    { icon:"i-globe", title:"Web Development",  items:["React.js","TypeScript","HTML5 / CSS3","Tailwind CSS","UI Design"] },
+    { icon:"i-spark", title:"UI/UX & Product",  items:["Gamification Design","Engagement Systems","Client-Side Architecture"] },
+    { icon:"i-cloud", title:"Cloud & Tools",    items:["AWS Lightsail","AWS EC2","AWS S3","VPC & Infrastructure"] },
+    { icon:"i-cpu",   title:"Robotics & IoT",   items:["ESP32 Microcontrollers","ESP32-CAM","Servo Controls","Arduino IDE"] },
+    { icon:"i-db",    title:"Networking & DB",  items:["MySQL Engine","Networking Basics"] },
   ];
 
   const EDUCATION = [
@@ -285,16 +424,123 @@
   ];
 
   const CERTS = [
-    { title:"Amazon DynamoDB Service Primer", org:"AWS Training & Certification | May 2026" },
-    { title:"SaaS Access Control Using Amazon Verified Permissions", org:"AWS Training & Certification | May 2026" },
+    { title:"Amazon DynamoDB Service Primer", org:"AWS Training | May 2026" },
+    { title:"SaaS Access Control via Amazon Permissions", org:"AWS Training | May 2026" },
     { title:"Python Programming Certification", org:"Northopio Computer Classes" },
     { title:"Cloud Computing Fundamentals", org:"IBM SkillsBuild" },
   ];
 
   const esc = s => s.replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
+  function renderProjects(targetCategory = 'all') {
+    const listContainer = document.getElementById('proj-list');
+    const filtered = targetCategory === 'all' ? PROJECTS : PROJECTS.filter(p => p.category === targetCategory);
+    
+    listContainer.innerHTML = filtered.map(p => `
+      <article class="tilt-card group relative flex flex-col gap-4 rounded-xl border p-6 hover:border-[color:var(--primary)] hover:shadow-cardGlow" style="border-color:var(--border);background:color-mix(in oklch, var(--card) 50%, transparent)">
+        <div class="flex items-center justify-between">
+          <span class="font-mono text-xs opacity-60">${esc(p.year)}</span>
+          <svg class="icon text-neutral-500 group-hover:text-[color:var(--primary)] transition-colors"><use href="#i-arrow"/></svg>
+        </div>
+        <h3 class="text-xl font-semibold leading-tight group-hover:text-[color:var(--primary)] transition-colors">${esc(p.title)}</h3>
+        <p class="text-sm leading-relaxed" style="color:var(--muted-foreground)">${esc(p.description)}</p>
+        <div class="mt-auto flex flex-wrap gap-1.5 pt-2">
+          ${p.stack.map(s=>`<span class="rounded-md border px-2 py-0.5 font-mono text-[11px] border-neutral-800 bg-neutral-900/60 text-neutral-400">${esc(s)}</span>`).join("")}
+        </div>
+      </article>`).join("");
+
+    document.querySelectorAll('.tilt-card').forEach(card => appendTiltLogic(card));
+  }
+
+  function filterProjects(category) {
+    const buttons = document.querySelectorAll('#filter-controls button');
+    buttons.forEach(btn => {
+      btn.classList.remove('bg-neutral-800', 'border-neutral-700', 'text-white');
+      btn.classList.add('border-neutral-800', 'text-neutral-400');
+    });
+    
+    const targetBtn = document.getElementById(`btn-filter-${category}`);
+    if (targetBtn) {
+      targetBtn.classList.add('bg-neutral-800', 'border-neutral-700', 'text-white');
+    }
+    renderProjects(category);
+  }
+
+  const categorySequence = ['all', 'cloud', 'robotics', 'ml'];
+  let currentSequenceIdx = 0;
+
+  window.addEventListener('keydown', (e) => {
+    if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
+      return;
+    }
+
+    const keyTriggered = e.key.toLowerCase();
+
+    if (keyTriggered === 't') {
+      e.preventDefault();
+      const sectionNode = document.getElementById('terminal-section');
+      const inputNode = document.getElementById('terminal-input');
+      if (sectionNode && inputNode) {
+        sectionNode.scrollIntoView({ behavior: 'smooth' });
+        setTimeout(() => inputNode.focus(), 400);
+      }
+    } else if (keyTriggered === 'p') {
+      e.preventDefault();
+      currentSequenceIdx = (currentSequenceIdx + 1) % categorySequence.length;
+      const TargetCategoryString = categorySequence[currentSequenceIdx];
+      filterProjects(TargetCategoryString);
+      
+      const projectTitleSection = document.getElementById('projects');
+      if (projectTitleSection) {
+        projectTitleSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  });
+
+  const termInput = document.getElementById('terminal-input');
+  const termBody = document.getElementById('terminal-body');
+
+  termInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      const inputVal = this.value.trim().toLowerCase();
+      this.value = '';
+      
+      const echoLine = document.createElement('div');
+      echoLine.className = 'text-white mt-2';
+      echoLine.innerHTML = `<span class="text-cyan-400">k-rajesh.dev $</span> ${esc(inputVal)}`;
+      termBody.appendChild(echoLine);
+
+      const responseLine = document.createElement('div');
+      responseLine.className = 'pl-2 text-neutral-300';
+
+      switch(inputVal) {
+        case 'help':
+          responseLine.innerHTML = `Available sub-system commands:<br/>
+            <span class="text-amber-400 font-bold">about</span>    - Executive overview background metrics.<br/>
+            <span class="text-amber-400 font-bold">skills</span>   - List active compiler/runtime stack tooling definitions.<br/>
+            <span class="text-amber-400 font-bold">clear</span>    - Wipe active terminal display window buffer.`;
+          break;
+        case 'about':
+          responseLine.textContent = "K. Rajesh — CSE Undergrad & Cloud Learner. Specializes in balancing frontend systems with practical edge hardware controls (ESP32 frameworks). Currently executing web architecture optimization paths.";
+          break;
+        case 'skills':
+          responseLine.textContent = "Languages: Python, C++, HTML/CSS, React.js, TypeScript. Cloud Foundations: Amazon Web Services (Lightsail, S3, EC2). Infrastructure: Embedded gait control processing, state machine matrices.";
+          break;
+        case 'clear':
+          termBody.innerHTML = '';
+          return;
+        default:
+          responseLine.className = 'pl-2 text-red-400';
+          responseLine.textContent = `Error: unknown system instruction "${inputVal}". Type "help" for baseline mappings.`;
+      }
+      
+      termBody.appendChild(responseLine);
+      termBody.scrollTop = termBody.scrollHeight;
+    }
+  });
+
   document.getElementById('exp-list').innerHTML = EXPERIENCE.map(e => `
-    <article class="grid gap-6 rounded-xl border p-6 sm:p-8 md:grid-cols-[200px_1fr]" style="border-color:var(--border);background:color-mix(in oklch, var(--card) 50%, transparent)">
+    <article class="grid gap-6 rounded-xl border p-6 sm:p-8 md:grid-cols-[200px_1fr] transition-colors hover:bg-neutral-900/20" style="border-color:var(--border);background:color-mix(in oklch, var(--card) 50%, transparent)">
       <div class="flex flex-col gap-1">
         <span class="inline-flex w-fit items-center gap-1.5 rounded-md px-2 py-0.5 font-mono text-[11px]" style="background:color-mix(in oklch, var(--primary) 10%, transparent); color:var(--primary)">
           <svg class="icon"><use href="#i-brief"/></svg> Internship
@@ -311,35 +557,22 @@
       </div>
     </article>`).join("");
 
-  document.getElementById('proj-list').innerHTML = PROJECTS.map(p => `
-    <article class="group relative flex flex-col gap-4 rounded-xl border p-6 transition-all hover:border-[color:var(--primary)]" style="border-color:var(--border);background:color-mix(in oklch, var(--card) 50%, transparent)">
-      <div class="flex items-center justify-between">
-        <span class="font-mono text-xs" style="color:var(--muted-foreground)">${esc(p.year)}</span>
-        <svg class="icon" style="color:var(--muted-foreground)"><use href="#i-arrow"/></svg>
-      </div>
-      <h3 class="text-xl font-semibold leading-tight">${esc(p.title)}</h3>
-      <p class="text-sm leading-relaxed" style="color:var(--muted-foreground)">${esc(p.description)}</p>
-      <div class="mt-auto flex flex-wrap gap-1.5 pt-2">
-        ${p.stack.map(s=>`<span class="rounded-md border px-2 py-0.5 font-mono text-[11px]" style="border-color:var(--border);background:color-mix(in oklch, var(--background) 60%, transparent);color:var(--muted-foreground)">${esc(s)}</span>`).join("")}
-      </div>
-    </article>`).join("");
-
   document.getElementById('skills-list').innerHTML = SKILLS.map(s => `
-    <div class="rounded-xl border p-6 transition-colors" style="border-color:var(--border);background:color-mix(in oklch, var(--card) 50%, transparent)">
+    <div class="rounded-xl border p-6 transition-all duration-300 hover:border-neutral-500 bg-neutral-900/30" style="border-color:var(--border)">
       <div class="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg" style="background:color-mix(in oklch, var(--primary) 10%, transparent); color:var(--primary)">
         <svg class="icon" style="font-size:1.25rem"><use href="#${s.icon}"/></svg>
       </div>
-      <h3 class="font-semibold">${esc(s.title)}</h3>
+      <h3 class="font-semibold text-white">${esc(s.title)}</h3>
       <ul class="mt-3 flex flex-wrap gap-1.5">
-        ${s.items.map(i=>`<li class="rounded-md px-2 py-0.5 font-mono text-[11px]" style="white-space:pre-line;background:color-mix(in oklch, var(--background) 60%, transparent);color:var(--muted-foreground)">${esc(i)}</li>`).join("")}
+        ${s.items.map(i=>`<li class="rounded-md px-2 py-0.5 font-mono text-[11px] bg-neutral-900 text-neutral-400 border border-neutral-800">${esc(i)}</li>`).join("")}
       </ul>
     </div>`).join("");
 
   document.getElementById('certs-list').innerHTML = CERTS.map(c => `
-    <li><span style="color:var(--foreground)">${esc(c.title)}</span> <span style="color:var(--muted-foreground)">— ${esc(c.org)}</span></li>`).join("");
+    <li class="text-sm"><span style="color:var(--foreground)">${esc(c.title)}</span> <span style="color:var(--muted-foreground)">— ${esc(c.org)}</span></li>`).join("");
 
   document.getElementById('edu-list').innerHTML = EDUCATION.map(e => `
-    <div class="flex flex-col gap-2 rounded-xl border p-6 sm:flex-row sm:items-center sm:justify-between" style="border-color:var(--border);background:color-mix(in oklch, var(--card) 50%, transparent)">
+    <div class="flex flex-col gap-2 rounded-xl border p-6 sm:flex-row sm:items-center sm:justify-between transition-colors hover:bg-neutral-900/20" style="border-color:var(--border);background:color-mix(in oklch, var(--card) 50%, transparent)">
       <div class="flex items-start gap-4">
         <svg class="icon mt-1 shrink-0" style="font-size:1.25rem;color:var(--primary)"><use href="#i-grad"/></svg>
         <div>
@@ -352,6 +585,8 @@
         ${e.detail ? `<span class="text-sm" style="color:var(--primary)">${esc(e.detail)}</span>` : ""}
       </div>
     </div>`).join("");
+
+  renderProjects('all');
 </script>
 </body>
 </html>
