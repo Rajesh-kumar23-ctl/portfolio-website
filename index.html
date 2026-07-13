@@ -14,6 +14,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" />
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script>
   tailwind.config = {
     theme: {
@@ -34,8 +35,8 @@
           border: 'var(--border)',
           accent: 'var(--accent)',
         },
-        boxShadow: { 
-          glow: '0 0 30px -5px var(--primary)',
+        boxShadow: {
+           glow: '0 0 30px -5px var(--primary)',
           cardGlow: '0 10px 30px -15px rgba(0,0,0,0.7)'
         },
       },
@@ -48,7 +49,7 @@
     --foreground: oklch(0.96 0.005 250);
     --card: oklch(0.19 0.018 250);
     --card-foreground: oklch(0.96 0.005 250);
-    --primary: oklch(0.84 0.17 95); 
+    --primary: oklch(0.84 0.17 95);
     --primary-foreground: oklch(0.14 0.015 250);
     --muted: oklch(0.22 0.02 250);
     --muted-foreground: oklch(0.72 0.018 250);
@@ -68,14 +69,14 @@
   }
   ::selection{background:color-mix(in oklch, var(--primary) 30%, transparent); color:var(--foreground)}
   .text-gradient {
-    background: linear-gradient(135deg, var(--primary), var(--accent)); 
-    -webkit-background-clip:text; 
-    background-clip:text; 
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    -webkit-background-clip:text;
+    background-clip:text;
     color:transparent
   }
   .font-mono{font-family:"JetBrains Mono", ui-monospace, monospace}
   .icon{width:1em;height:1em;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:inline-block;vertical-align:-0.125em}
-  
+
   ::-webkit-scrollbar { width: 8px; }
   ::-webkit-scrollbar-track { background: var(--background); }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
@@ -86,9 +87,76 @@
     perspective: 1000px;
     transition: transform 0.1s ease, border-color 0.3s ease;
   }
+
+  /* LetterGlitch background */
+  #glitch-bg-wrap{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    overflow:hidden;
+    opacity:0.16;
+    pointer-events:none;
+  }
+  #glitch-bg-wrap canvas{
+    display:block;
+    width:100%;
+    height:100%;
+  }
+  .glitch-vignette-outer{
+    position:absolute; inset:0; pointer-events:none;
+    background: radial-gradient(circle, rgba(0,0,0,0) 55%, var(--background) 100%);
+  }
+  .glitch-vignette-center{
+    position:absolute; inset:0; pointer-events:none;
+    background: radial-gradient(circle, color-mix(in oklch, var(--background) 85%, transparent) 0%, rgba(0,0,0,0) 60%);
+  }
+
+  /* TextType */
+  .text-type{display:inline-block; white-space:pre-wrap}
+  .text-type__cursor{margin-left:0.15rem; display:inline-block; opacity:1}
+  .text-type__cursor--hidden{display:none}
+
+  /* TargetCursor */
+  .target-cursor-wrapper{
+    position:fixed; top:0; left:0; width:0; height:0;
+    pointer-events:none; z-index:9999;
+    mix-blend-mode:difference;
+    transform:translate(-50%, -50%);
+  }
+  .target-cursor-dot{
+    position:absolute; left:50%; top:50%; width:4px; height:4px;
+    background:var(--primary); border-radius:50%;
+    transform:translate(-50%, -50%); will-change:transform;
+  }
+  .target-cursor-corner{
+    position:absolute; left:50%; top:50%; width:12px; height:12px;
+    border:3px solid var(--primary); will-change:transform;
+  }
+  .corner-tl{ transform:translate(-150%, -150%); border-right:none; border-bottom:none; }
+  .corner-tr{ transform:translate(50%, -150%); border-left:none; border-bottom:none; }
+  .corner-br{ transform:translate(50%, 50%); border-left:none; border-top:none; }
+  .corner-bl{ transform:translate(-150%, 50%); border-right:none; border-top:none; }
+
+  @media (hover:none), (pointer:coarse){
+    .target-cursor-wrapper{ display:none; }
+  }
 </style>
 </head>
 <body class="min-h-screen relative selection:bg-amber-500/20">
+
+<div id="glitch-bg-wrap" aria-hidden="true">
+  <canvas id="glitch-canvas"></canvas>
+  <div class="glitch-vignette-center"></div>
+  <div class="glitch-vignette-outer"></div>
+</div>
+
+<div id="target-cursor" class="target-cursor-wrapper" aria-hidden="true">
+  <div class="target-cursor-dot"></div>
+  <div class="target-cursor-corner corner-tl"></div>
+  <div class="target-cursor-corner corner-tr"></div>
+  <div class="target-cursor-corner corner-br"></div>
+  <div class="target-cursor-corner corner-bl"></div>
+</div>
 
 <div id="progress-bar" class="fixed top-0 left-0 h-[3px] z-[60] transition-all duration-75 w-0" style="background: var(--primary)"></div>
 
@@ -129,7 +197,7 @@
       <a href="#skills" class="text-sm transition-colors hover:text-[color:var(--foreground)]" style="color:var(--muted-foreground)">Skills</a>
       <a href="#contact" class="text-sm transition-colors hover:text-[color:var(--foreground)]" style="color:var(--muted-foreground)">Contact</a>
     </nav>
-    
+
     <div class="flex items-center gap-4">
       <div class="flex items-center gap-1.5 bg-neutral-900/60 p-1.5 rounded-md border border-[color:var(--border)]">
         <button onclick="setAccent('gold')" class="w-3 h-3 rounded-full bg-amber-400" title="Amber Accent"></button>
@@ -146,7 +214,7 @@
   </div>
 </header>
 
-<main class="mx-auto max-w-6xl px-6 sm:px-8">
+<main class="relative z-[1] mx-auto max-w-6xl px-6 sm:px-8">
 
   <section id="top" class="relative py-24 sm:py-32">
     <div class="flex flex-col gap-6">
@@ -156,16 +224,16 @@
           Available for full stack opportunities
         </span>
         <span id="time-ticker" class="font-mono text-xs opacity-60 bg-neutral-900/40 border border-neutral-800/80 px-2 py-1 rounded-md"></span>
-        
+
         <span class="hidden lg:inline-flex items-center gap-2 font-mono text-xs text-neutral-500 bg-neutral-900/40 border border-neutral-800/80 px-2.5 py-1 rounded-md">
           <svg class="icon"><use href="#i-keyboard"/></svg>
           Hotkeys: <kbd class="px-1 bg-neutral-800 text-neutral-300 rounded border border-neutral-700">T</kbd> Terminal · <kbd class="px-1 bg-neutral-800 text-neutral-300 rounded border border-neutral-700">P</kbd> Cycle Filter
         </span>
       </div>
-      
+
       <h1 class="text-5xl font-bold leading-[1.05] tracking-tight sm:text-7xl md:text-8xl">
         K. Rajesh.<br/>
-        <span class="text-gradient inline-block min-w-[300px]" id="typewriter-text">Building practical,</span><br/>
+        <span class="text-gradient inline-block min-w-[300px]" id="typewriter-text"></span><br/>
         <span style="color:var(--muted-foreground)">user-centric software.</span>
       </h1>
       <p class="max-w-2xl text-lg sm:text-xl" style="color:var(--muted-foreground)">
@@ -193,15 +261,15 @@
       <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">A short profile</h2>
     </div>
     <div class="grid gap-10 md:grid-cols-3">
-      <p class="md:col-span-2 text-lg leading-relaxed" style="color:var(--muted-foreground)">
-        Motivated Computer Science Engineering student with hands-on experience in web development, cloud infrastructure, robotics, and IoT. Currently a Frontend UI/UX Developer Intern at <span style="color:var(--foreground)">Hexmon Technologies</span> and formerly at <span style="color:var(--foreground)">Bluestock Fintech</span>. Eagerly scaling production workflows, interactive interfaces, and seeking directions to grow into a versatile <span style="color:var(--foreground)">Cloud Engineer</span>.
-      </p>
-      <div class="rounded-lg border p-6 transition-transform hover:scale-[1.02] shadow-cardGlow" style="border-color:var(--border);background:var(--card)">
+      <div class="md:col-span-2">
+        <p class="text-lg leading-relaxed" id="about-typetext" style="color:var(--muted-foreground); min-height:8.5rem"></p>
+      </div>
+      <div class="cursor-target rounded-lg border p-6 transition-transform hover:scale-[1.02] shadow-cardGlow" style="border-color:var(--border);background:var(--card)">
         <p class="font-mono text-xs uppercase tracking-widest" style="color:var(--muted-foreground)">Currently</p>
         <p class="mt-2 font-semibold">B.Tech CSE @ Centurion University</p>
         <p class="text-sm" style="color:var(--muted-foreground)">2024 — 2028 · GPA 7.78</p>
         <div class="mt-4 flex flex-wrap gap-2 font-mono text-xs" style="color:var(--primary)">
-          <svg class="icon mt-0.5"><use href="#i-lang"/></svg> 
+          <svg class="icon mt-0.5"><use href="#i-lang"/></svg>
           <span>English · Hindi · Telugu · Odia</span>
         </div>
       </div>
@@ -238,7 +306,7 @@
       <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">Developer Terminal</h2>
       <p class="text-sm max-w-xl" style="color:var(--muted-foreground)">Type directly into the console sandbox below to query my database endpoints in real time. (Or hit <kbd class="px-1 text-xs bg-neutral-800 rounded text-neutral-400">T</kbd> anywhere to focus)</p>
     </div>
-    
+
     <div class="w-full rounded-xl border overflow-hidden shadow-2xl" style="border-color:var(--border); background:#0c0e12">
       <div class="flex items-center justify-between px-4 py-3 bg-neutral-900 border-b border-neutral-800 font-mono text-xs text-neutral-400">
         <div class="flex items-center gap-2">
@@ -266,13 +334,13 @@
     </div>
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" id="skills-list"></div>
     <div class="mt-8 grid gap-4 sm:grid-cols-2">
-      <div class="rounded-xl border p-6 transition-all hover:scale-[1.01]" style="border-color:var(--border);background:color-mix(in oklch, var(--card) 50%, transparent)">
+      <div class="cursor-target rounded-xl border p-6 transition-all hover:scale-[1.01]" style="border-color:var(--border);background:color-mix(in oklch, var(--card) 50%, transparent)">
         <p class="mb-3 flex items-center gap-2 font-mono text-xs uppercase tracking-widest" style="color:var(--primary)">
           <svg class="icon"><use href="#i-spark"/></svg> Soft Skills
         </p>
         <p style="color:var(--muted-foreground)">Teamwork · Communication · Creativity · Critical Problem-Solving</p>
       </div>
-      <div class="rounded-xl border p-6 transition-all hover:scale-[1.01]" style="border-color:var(--border);background:color-mix(in oklch, var(--card) 50%, transparent)">
+      <div class="cursor-target rounded-xl border p-6 transition-all hover:scale-[1.01]" style="border-color:var(--border);background:color-mix(in oklch, var(--card) 50%, transparent)">
         <p class="mb-3 flex items-center gap-2 font-mono text-xs uppercase tracking-widest" style="color:var(--primary)">
           <svg class="icon"><use href="#i-award"/></svg> Certifications
         </p>
@@ -290,7 +358,7 @@
   </section>
 
   <section id="contact" class="border-t py-24 sm:py-32" style="border-color:color-mix(in oklch, var(--border) 40%, transparent)">
-    <div class="rounded-2xl border p-10 text-center sm:p-16 transition-all hover:border-[color:var(--primary)]/60 shadow-glow" style="border-color:color-mix(in oklch, var(--primary) 20%, transparent); background:color-mix(in oklch, var(--card) 60%, transparent)">
+    <div class="cursor-target rounded-2xl border p-10 text-center sm:p-16 transition-all hover:border-[color:var(--primary)]/60 shadow-glow" style="border-color:color-mix(in oklch, var(--primary) 20%, transparent); background:color-mix(in oklch, var(--card) 60%, transparent)">
       <span class="font-mono text-xs uppercase tracking-widest" style="color:var(--primary)">07 — Contact</span>
       <h2 class="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">Let's build something together.</h2>
       <p class="mx-auto mt-4 max-w-xl" style="color:var(--muted-foreground)">Open to production engineering opportunities, freelance architecture, and collaboration on custom cloud or edge IoT workflows.</p>
@@ -314,7 +382,7 @@
   </section>
 </main>
 
-<footer class="mt-20 border-t" style="border-color:color-mix(in oklch, var(--border) 40%, transparent)">
+<footer class="relative z-[1] mt-20 border-t" style="border-color:color-mix(in oklch, var(--border) 40%, transparent)">
   <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 py-8 sm:flex-row sm:px-8">
     <p class="font-mono text-xs" style="color:var(--muted-foreground)">© <span id="yr"></span> K. Rajesh. Engineered with precision.</p>
     <p class="font-mono text-xs" style="color:var(--muted-foreground)">Khurda, Odisha · India</p>
@@ -351,41 +419,553 @@
     document.getElementById('time-ticker').innerHTML = `IST: ${localTime} · Active`;
   }, 1000);
 
-  const textOptions = ["Building practical,", "Designing embedded,", "Optimizing scalable,", "Deploying standard,"];
-  let currentWordIdx = 0;
-  let characterIdx = 0;
-  let isDeleting = false;
-  const typewriterElement = document.getElementById('typewriter-text');
+  /* =========================================================
+     TextType — vanilla JS port of the React Bits component
+     (same defaults/behavior, driven by GSAP for cursor blink)
+  ========================================================= */
+  class TextType {
+    constructor(el, {
+      text,
+      typingSpeed = 50,
+      initialDelay = 0,
+      pauseDuration = 2000,
+      deletingSpeed = 30,
+      loop = true,
+      showCursor = true,
+      hideCursorWhileTyping = false,
+      cursorCharacter = '|',
+      cursorBlinkDuration = 0.5,
+      textColors = [],
+      variableSpeed = null,
+      onSentenceComplete = null,
+      reverseMode = false,
+    } = {}) {
+      this.el = el;
+      this.textArray = Array.isArray(text) ? text : [text];
+      this.typingSpeed = typingSpeed;
+      this.initialDelay = initialDelay;
+      this.pauseDuration = pauseDuration;
+      this.deletingSpeed = deletingSpeed;
+      this.loop = loop;
+      this.showCursor = showCursor;
+      this.hideCursorWhileTyping = hideCursorWhileTyping;
+      this.cursorCharacter = cursorCharacter;
+      this.cursorBlinkDuration = cursorBlinkDuration;
+      this.textColors = textColors;
+      this.variableSpeed = variableSpeed;
+      this.onSentenceComplete = onSentenceComplete;
+      this.reverseMode = reverseMode;
 
-  function runTypewriterCycle() {
-    const currentWord = textOptions[currentWordIdx];
-    if (isDeleting) {
-      characterIdx--;
-    } else {
-      characterIdx++;
+      this.displayedText = '';
+      this.currentCharIndex = 0;
+      this.isDeleting = false;
+      this.currentTextIndex = 0;
+      this.timeout = null;
+
+      this.el.classList.add('text-type');
+      this.contentSpan = document.createElement('span');
+      this.contentSpan.className = 'text-type__content';
+      this.el.appendChild(this.contentSpan);
+
+      if (this.showCursor) {
+        this.cursorSpan = document.createElement('span');
+        this.cursorSpan.className = 'text-type__cursor';
+        this.cursorSpan.textContent = this.cursorCharacter;
+        this.el.appendChild(this.cursorSpan);
+        gsap.set(this.cursorSpan, { opacity: 1 });
+        gsap.to(this.cursorSpan, {
+          opacity: 0,
+          duration: this.cursorBlinkDuration,
+          repeat: -1,
+          yoyo: true,
+          ease: 'power2.inOut',
+        });
+      }
+
+      this.timeout = setTimeout(() => this._tick(), this.initialDelay);
     }
-    typewriterElement.textContent = currentWord.substring(0, characterIdx);
 
-    let speed = isDeleting ? 40 : 80;
-
-    if (!isDeleting && characterIdx === currentWord.length) {
-      speed = 1800; 
-      isDeleting = true;
-    } else if (isDeleting && characterIdx === 0) {
-      isDeleting = false;
-      currentWordIdx = (currentWordIdx + 1) % textOptions.length;
-      speed = 400; 
+    _getRandomSpeed() {
+      if (!this.variableSpeed) return this.typingSpeed;
+      const { min, max } = this.variableSpeed;
+      return Math.random() * (max - min) + min;
     }
-    setTimeout(runTypewriterCycle, speed);
+
+    _currentColor() {
+      if (!this.textColors.length) return 'inherit';
+      return this.textColors[this.currentTextIndex % this.textColors.length];
+    }
+
+    _render() {
+      this.contentSpan.textContent = this.displayedText;
+      this.contentSpan.style.color = this._currentColor();
+      if (this.cursorSpan) {
+        const typing = this.currentCharIndex < this.textArray[this.currentTextIndex].length && !this.isDeleting;
+        const hide = this.hideCursorWhileTyping && (typing || this.isDeleting);
+        this.cursorSpan.classList.toggle('text-type__cursor--hidden', hide);
+      }
+    }
+
+    _tick() {
+      const currentText = this.textArray[this.currentTextIndex];
+      const processed = this.reverseMode ? currentText.split('').reverse().join('') : currentText;
+
+      if (this.isDeleting) {
+        if (this.displayedText === '') {
+          this.isDeleting = false;
+          if (this.currentTextIndex === this.textArray.length - 1 && !this.loop) {
+            this._render();
+            return;
+          }
+          if (this.onSentenceComplete) this.onSentenceComplete(currentText, this.currentTextIndex);
+          this.currentTextIndex = (this.currentTextIndex + 1) % this.textArray.length;
+          this.currentCharIndex = 0;
+          this._render();
+          this.timeout = setTimeout(() => this._tick(), this.pauseDuration);
+        } else {
+          this.displayedText = this.displayedText.slice(0, -1);
+          this._render();
+          this.timeout = setTimeout(() => this._tick(), this.deletingSpeed);
+        }
+      } else {
+        if (this.currentCharIndex < processed.length) {
+          this.displayedText += processed[this.currentCharIndex];
+          this.currentCharIndex += 1;
+          this._render();
+          const speed = this.variableSpeed ? this._getRandomSpeed() : this.typingSpeed;
+          this.timeout = setTimeout(() => this._tick(), speed);
+        } else if (this.textArray.length >= 1) {
+          if (!this.loop && this.currentTextIndex === this.textArray.length - 1) {
+            this._render();
+            return;
+          }
+          this.timeout = setTimeout(() => {
+            this.isDeleting = true;
+            this._tick();
+          }, this.pauseDuration);
+        }
+      }
+    }
   }
-  setTimeout(runTypewriterCycle, 1000);
+
+  new TextType(document.getElementById('typewriter-text'), {
+    text: ["Building practical,", "Designing embedded,", "Optimizing scalable,", "Deploying standard,"],
+    typingSpeed: 80,
+    deletingSpeed: 40,
+    pauseDuration: 1800,
+    initialDelay: 1000,
+    loop: true,
+    showCursor: true,
+    cursorCharacter: '|',
+    cursorBlinkDuration: 0.5,
+  });
+
+  new TextType(document.getElementById('about-typetext'), {
+    text: [
+      "Motivated Computer Science Engineering student with hands-on experience in web development, cloud infrastructure, robotics, and IoT.",
+      "Currently a Frontend UI/UX Developer Intern at Hexmon Technologies and formerly at Bluestock Fintech.",
+      "Eagerly scaling production workflows, interactive interfaces, and seeking directions to grow into a versatile Cloud Engineer.",
+    ],
+    typingSpeed: 22,
+    deletingSpeed: 8,
+    pauseDuration: 2600,
+    initialDelay: 300,
+    loop: true,
+    showCursor: true,
+    cursorCharacter: '_',
+    cursorBlinkDuration: 0.6,
+  });
+
+  /* =========================================================
+     LetterGlitch — vanilla JS port of the React Bits component
+     Rendered as a fixed, low-opacity background canvas.
+  ========================================================= */
+  class LetterGlitch {
+    constructor(canvas, {
+      glitchColors = ['#3a3520', '#f2c94c', '#4fd1c5'],
+      glitchSpeed = 60,
+      centerVignette = false,
+      outerVignette = true,
+      smooth = true,
+      characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$&*()-_+=/[]{};:<>.,0123456789',
+    } = {}) {
+      this.canvas = canvas;
+      this.glitchColors = glitchColors;
+      this.glitchSpeed = glitchSpeed;
+      this.smooth = smooth;
+      this.lettersAndSymbols = Array.from(characters);
+      this.fontSize = 16;
+      this.charWidth = 10;
+      this.charHeight = 20;
+      this.letters = [];
+      this.grid = { columns: 0, rows: 0 };
+      this.lastGlitchTime = Date.now();
+      this.animationFrame = null;
+
+      this.ctx = canvas.getContext('2d');
+      this._resize = this._resize.bind(this);
+      this._animate = this._animate.bind(this);
+
+      this._resize();
+      window.addEventListener('resize', () => {
+        clearTimeout(this._resizeTimeout);
+        this._resizeTimeout = setTimeout(() => {
+          cancelAnimationFrame(this.animationFrame);
+          this._resize();
+          this._animate();
+        }, 100);
+      });
+
+      this._animate();
+    }
+
+    _getRandomChar() {
+      return this.lettersAndSymbols[Math.floor(Math.random() * this.lettersAndSymbols.length)];
+    }
+
+    _getRandomColor() {
+      return this.glitchColors[Math.floor(Math.random() * this.glitchColors.length)];
+    }
+
+    _hexToRgb(hex) {
+      const shorthand = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+      hex = hex.replace(shorthand, (m, r, g, b) => r + r + g + g + b + b);
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result
+        ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) }
+        : null;
+    }
+
+    _interpolateColor(start, end, factor) {
+      const r = Math.round(start.r + (end.r - start.r) * factor);
+      const g = Math.round(start.g + (end.g - start.g) * factor);
+      const b = Math.round(start.b + (end.b - start.b) * factor);
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    _calculateGrid(width, height) {
+      return {
+        columns: Math.ceil(width / this.charWidth),
+        rows: Math.ceil(height / this.charHeight),
+      };
+    }
+
+    _initLetters(columns, rows) {
+      this.grid = { columns, rows };
+      const total = columns * rows;
+      this.letters = Array.from({ length: total }, () => ({
+        char: this._getRandomChar(),
+        color: this._getRandomColor(),
+        targetColor: this._getRandomColor(),
+        colorProgress: 1,
+      }));
+    }
+
+    _resize() {
+      const parent = this.canvas.parentElement;
+      if (!parent) return;
+      const dpr = window.devicePixelRatio || 1;
+      const rect = parent.getBoundingClientRect();
+
+      this.canvas.width = rect.width * dpr;
+      this.canvas.height = rect.height * dpr;
+      this.canvas.style.width = `${rect.width}px`;
+      this.canvas.style.height = `${rect.height}px`;
+      this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const { columns, rows } = this._calculateGrid(rect.width, rect.height);
+      this._initLetters(columns, rows);
+      this._draw();
+    }
+
+    _draw() {
+      if (!this.letters.length) return;
+      const rect = this.canvas.getBoundingClientRect();
+      this.ctx.clearRect(0, 0, rect.width, rect.height);
+      this.ctx.font = `${this.fontSize}px monospace`;
+      this.ctx.textBaseline = 'top';
+
+      this.letters.forEach((letter, index) => {
+        const x = (index % this.grid.columns) * this.charWidth;
+        const y = Math.floor(index / this.grid.columns) * this.charHeight;
+        this.ctx.fillStyle = letter.color;
+        this.ctx.fillText(letter.char, x, y);
+      });
+    }
+
+    _update() {
+      const updateCount = Math.max(1, Math.floor(this.letters.length * 0.05));
+      for (let i = 0; i < updateCount; i++) {
+        const index = Math.floor(Math.random() * this.letters.length);
+        const letter = this.letters[index];
+        if (!letter) continue;
+        letter.char = this._getRandomChar();
+        letter.targetColor = this._getRandomColor();
+        if (!this.smooth) {
+          letter.color = letter.targetColor;
+          letter.colorProgress = 1;
+        } else {
+          letter.colorProgress = 0;
+        }
+      }
+    }
+
+    _smoothTransitions() {
+      let needsRedraw = false;
+      this.letters.forEach((letter) => {
+        if (letter.colorProgress < 1) {
+          letter.colorProgress = Math.min(1, letter.colorProgress + 0.05);
+          const start = this._hexToRgb(letter.color);
+          const end = this._hexToRgb(letter.targetColor);
+          if (start && end) {
+            letter.color = this._interpolateColor(start, end, letter.colorProgress);
+            needsRedraw = true;
+          }
+        }
+      });
+      if (needsRedraw) this._draw();
+    }
+
+    _animate() {
+      const now = Date.now();
+      if (now - this.lastGlitchTime >= this.glitchSpeed) {
+        this._update();
+        this._draw();
+        this.lastGlitchTime = now;
+      }
+      if (this.smooth) this._smoothTransitions();
+      this.animationFrame = requestAnimationFrame(this._animate);
+    }
+  }
+
+  new LetterGlitch(document.getElementById('glitch-canvas'), {
+    glitchColors: ['#3a3520', '#f2c94c', '#4fd1c5'],
+    glitchSpeed: 60,
+    centerVignette: true,
+    outerVignette: true,
+    smooth: true,
+  });
+
+  /* =========================================================
+     TargetCursor — vanilla JS port of the React Bits component
+     Locks a bracket cursor onto any ".cursor-target" element.
+  ========================================================= */
+  class TargetCursor {
+    constructor(wrapperEl, {
+      targetSelector = '.cursor-target',
+      spinDuration = 2,
+      hideDefaultCursor = true,
+      hoverDuration = 0.2,
+      parallaxOn = true,
+      cursorColor = null,
+      cursorColorOnTarget = null,
+    } = {}) {
+      const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      const isSmallScreen = window.innerWidth <= 768;
+      const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
+      const isMobileUA = mobileRegex.test((navigator.userAgent || navigator.vendor || '').toLowerCase());
+      this.isMobile = (hasTouchScreen && isSmallScreen) || isMobileUA;
+      if (this.isMobile) {
+        wrapperEl.style.display = 'none';
+        return;
+      }
+
+      this.cursor = wrapperEl;
+      this.dot = wrapperEl.querySelector('.target-cursor-dot');
+      this.corners = wrapperEl.querySelectorAll('.target-cursor-corner');
+      this.targetSelector = targetSelector;
+      this.spinDuration = spinDuration;
+      this.hoverDuration = hoverDuration;
+      this.parallaxOn = parallaxOn;
+      this.cursorColor = cursorColor;
+      this.cursorColorOnTarget = cursorColorOnTarget;
+      this.borderWidth = 3;
+      this.cornerSize = 12;
+
+      this.activeTarget = null;
+      this.currentLeaveHandler = null;
+      this.resumeTimeout = null;
+      this.targetCornerPositions = null;
+      this.activeStrength = { current: 0 };
+      this.tickerFn = this._tick.bind(this);
+
+      if (hideDefaultCursor) document.body.style.cursor = 'none';
+
+      gsap.set(this.cursor, {
+        xPercent: -50, yPercent: -50,
+        x: window.innerWidth / 2, y: window.innerHeight / 2,
+      });
+
+      this._createSpinTimeline();
+
+      window.addEventListener('mousemove', (e) => this._moveCursor(e.clientX, e.clientY));
+      window.addEventListener('mouseover', (e) => this._enterHandler(e), { passive: true });
+      window.addEventListener('mousedown', () => {
+        gsap.to(this.dot, { scale: 0.7, duration: 0.3 });
+        gsap.to(this.cursor, { scale: 0.9, duration: 0.2 });
+      });
+      window.addEventListener('mouseup', () => {
+        gsap.to(this.dot, { scale: 1, duration: 0.3 });
+        gsap.to(this.cursor, { scale: 1, duration: 0.2 });
+      });
+      window.addEventListener('scroll', () => this._scrollHandler(), { passive: true });
+    }
+
+    _createSpinTimeline() {
+      if (this.spinTl) this.spinTl.kill();
+      this.spinTl = gsap.timeline({ repeat: -1 })
+        .to(this.cursor, { rotation: '+=360', duration: this.spinDuration, ease: 'none' });
+    }
+
+    _moveCursor(x, y) {
+      gsap.to(this.cursor, { x, y, duration: 0.1, ease: 'power3.out' });
+    }
+
+    _scrollHandler() {
+      if (!this.activeTarget) return;
+      const mouseX = gsap.getProperty(this.cursor, 'x');
+      const mouseY = gsap.getProperty(this.cursor, 'y');
+      const el = document.elementFromPoint(mouseX, mouseY);
+      const stillOver = el && (el === this.activeTarget || el.closest(this.targetSelector) === this.activeTarget);
+      if (!stillOver && this.currentLeaveHandler) this.currentLeaveHandler();
+    }
+
+    _tick() {
+      if (!this.targetCornerPositions) return;
+      const strength = this.activeStrength.current;
+      if (strength === 0) return;
+
+      const cursorX = gsap.getProperty(this.cursor, 'x');
+      const cursorY = gsap.getProperty(this.cursor, 'y');
+
+      Array.from(this.corners).forEach((corner, i) => {
+        const currentX = gsap.getProperty(corner, 'x');
+        const currentY = gsap.getProperty(corner, 'y');
+        const targetX = this.targetCornerPositions[i].x - cursorX;
+        const targetY = this.targetCornerPositions[i].y - cursorY;
+        const finalX = currentX + (targetX - currentX) * strength;
+        const finalY = currentY + (targetY - currentY) * strength;
+        const duration = strength >= 0.99 ? (this.parallaxOn ? 0.2 : 0) : 0.05;
+        gsap.to(corner, { x: finalX, y: finalY, duration, ease: duration === 0 ? 'none' : 'power1.out', overwrite: 'auto' });
+      });
+    }
+
+    _cleanupTarget(target) {
+      if (this.currentLeaveHandler) target.removeEventListener('mouseleave', this.currentLeaveHandler);
+      this.currentLeaveHandler = null;
+    }
+
+    _enterHandler(e) {
+      let current = e.target;
+      let target = null;
+      while (current && current !== document.body) {
+        if (current.matches && current.matches(this.targetSelector)) { target = current; break; }
+        current = current.parentElement;
+      }
+      if (!target || this.activeTarget === target) return;
+      if (this.activeTarget) this._cleanupTarget(this.activeTarget);
+      if (this.resumeTimeout) { clearTimeout(this.resumeTimeout); this.resumeTimeout = null; }
+
+      this.activeTarget = target;
+      const corners = Array.from(this.corners);
+      corners.forEach(c => gsap.killTweensOf(c, 'x,y'));
+
+      gsap.killTweensOf(this.cursor, 'rotation');
+      this.spinTl?.pause();
+      gsap.set(this.cursor, { rotation: 0 });
+
+      if (this.cursorColorOnTarget) {
+        gsap.to(corners, { borderColor: this.cursorColorOnTarget, duration: 0.15, ease: 'power2.out' });
+        gsap.to(this.dot, { backgroundColor: this.cursorColorOnTarget, duration: 0.15, ease: 'power2.out' });
+      }
+
+      const rect = target.getBoundingClientRect();
+      const { borderWidth, cornerSize } = this;
+      const cursorX = gsap.getProperty(this.cursor, 'x');
+      const cursorY = gsap.getProperty(this.cursor, 'y');
+
+      this.targetCornerPositions = [
+        { x: rect.left - borderWidth, y: rect.top - borderWidth },
+        { x: rect.right + borderWidth - cornerSize, y: rect.top - borderWidth },
+        { x: rect.right + borderWidth - cornerSize, y: rect.bottom + borderWidth - cornerSize },
+        { x: rect.left - borderWidth, y: rect.bottom + borderWidth - cornerSize },
+      ];
+
+      gsap.ticker.add(this.tickerFn);
+      gsap.to(this.activeStrength, { current: 1, duration: this.hoverDuration, ease: 'power2.out' });
+
+      corners.forEach((corner, i) => {
+        gsap.to(corner, {
+          x: this.targetCornerPositions[i].x - cursorX,
+          y: this.targetCornerPositions[i].y - cursorY,
+          duration: 0.2, ease: 'power2.out',
+        });
+      });
+
+      const leaveHandler = () => {
+        gsap.ticker.remove(this.tickerFn);
+        this.targetCornerPositions = null;
+        gsap.set(this.activeStrength, { current: 0, overwrite: true });
+        this.activeTarget = null;
+
+        if (this.cursorColorOnTarget) {
+          gsap.to(Array.from(this.corners), { borderColor: this.cursorColor || '#fff', duration: 0.15, ease: 'power2.out' });
+          gsap.to(this.dot, { backgroundColor: this.cursorColor || '#fff', duration: 0.15, ease: 'power2.out' });
+        }
+
+        const cs = Array.from(this.corners);
+        gsap.killTweensOf(cs, 'x,y');
+        const { cornerSize } = this;
+        const positions = [
+          { x: -cornerSize * 1.5, y: -cornerSize * 1.5 },
+          { x: cornerSize * 0.5, y: -cornerSize * 1.5 },
+          { x: cornerSize * 0.5, y: cornerSize * 0.5 },
+          { x: -cornerSize * 1.5, y: cornerSize * 0.5 },
+        ];
+        const tl = gsap.timeline();
+        cs.forEach((corner, index) => {
+          tl.to(corner, { x: positions[index].x, y: positions[index].y, duration: 0.3, ease: 'power3.out' }, 0);
+        });
+
+        this.resumeTimeout = setTimeout(() => {
+          if (!this.activeTarget && this.spinTl) {
+            const currentRotation = gsap.getProperty(this.cursor, 'rotation');
+            const normalizedRotation = currentRotation % 360;
+            this.spinTl.kill();
+            this.spinTl = gsap.timeline({ repeat: -1 }).to(this.cursor, { rotation: '+=360', duration: this.spinDuration, ease: 'none' });
+            gsap.to(this.cursor, {
+              rotation: normalizedRotation + 360,
+              duration: this.spinDuration * (1 - normalizedRotation / 360),
+              ease: 'none',
+              onComplete: () => this.spinTl?.restart(),
+            });
+          }
+          this.resumeTimeout = null;
+        }, 50);
+
+        this._cleanupTarget(target);
+      };
+
+      this.currentLeaveHandler = leaveHandler;
+      target.addEventListener('mouseleave', leaveHandler);
+    }
+  }
+
+  new TargetCursor(document.getElementById('target-cursor'), {
+    targetSelector: '.cursor-target',
+    spinDuration: 2,
+    hideDefaultCursor: true,
+    hoverDuration: 0.2,
+    parallaxOn: true,
+    cursorColorOnTarget: null,
+  });
 
   function appendTiltLogic(element) {
     element.addEventListener('mousemove', (e) => {
       const rect = element.getBoundingClientRect();
       const coordX = e.clientX - rect.left - rect.width / 2;
       const coordY = e.clientY - rect.top - rect.height / 2;
-      const rotationDegreeX = (coordY / (rect.height / 2)) * -6; 
+      const rotationDegreeX = (coordY / (rect.height / 2)) * -6;
       const rotationDegreeY = (coordX / (rect.width / 2)) * 6;
       element.style.transform = `rotateX(${rotationDegreeX}deg) rotateY(${rotationDegreeY}deg) translateY(-4px)`;
     });
@@ -435,9 +1015,9 @@
   function renderProjects(targetCategory = 'all') {
     const listContainer = document.getElementById('proj-list');
     const filtered = targetCategory === 'all' ? PROJECTS : PROJECTS.filter(p => p.category === targetCategory);
-    
+
     listContainer.innerHTML = filtered.map(p => `
-      <article class="tilt-card group relative flex flex-col gap-4 rounded-xl border p-6 hover:border-[color:var(--primary)] hover:shadow-cardGlow" style="border-color:var(--border);background:color-mix(in oklch, var(--card) 50%, transparent)">
+      <article class="tilt-card cursor-target group relative flex flex-col gap-4 rounded-xl border p-6 hover:border-[color:var(--primary)] hover:shadow-cardGlow" style="border-color:var(--border);background:color-mix(in oklch, var(--card) 50%, transparent)">
         <div class="flex items-center justify-between">
           <span class="font-mono text-xs opacity-60">${esc(p.year)}</span>
           <svg class="icon text-neutral-500 group-hover:text-[color:var(--primary)] transition-colors"><use href="#i-arrow"/></svg>
@@ -458,7 +1038,7 @@
       btn.classList.remove('bg-neutral-800', 'border-neutral-700', 'text-white');
       btn.classList.add('border-neutral-800', 'text-neutral-400');
     });
-    
+
     const targetBtn = document.getElementById(`btn-filter-${category}`);
     if (targetBtn) {
       targetBtn.classList.add('bg-neutral-800', 'border-neutral-700', 'text-white');
@@ -489,7 +1069,7 @@
       currentSequenceIdx = (currentSequenceIdx + 1) % categorySequence.length;
       const TargetCategoryString = categorySequence[currentSequenceIdx];
       filterProjects(TargetCategoryString);
-      
+
       const projectTitleSection = document.getElementById('projects');
       if (projectTitleSection) {
         projectTitleSection.scrollIntoView({ behavior: 'smooth' });
@@ -504,7 +1084,7 @@
     if (e.key === 'Enter') {
       const inputVal = this.value.trim().toLowerCase();
       this.value = '';
-      
+
       const echoLine = document.createElement('div');
       echoLine.className = 'text-white mt-2';
       echoLine.innerHTML = `<span class="text-cyan-400">k-rajesh.dev $</span> ${esc(inputVal)}`;
@@ -533,14 +1113,14 @@
           responseLine.className = 'pl-2 text-red-400';
           responseLine.textContent = `Error: unknown system instruction "${inputVal}". Type "help" for baseline mappings.`;
       }
-      
+
       termBody.appendChild(responseLine);
       termBody.scrollTop = termBody.scrollHeight;
     }
   });
 
   document.getElementById('exp-list').innerHTML = EXPERIENCE.map(e => `
-    <article class="grid gap-6 rounded-xl border p-6 sm:p-8 md:grid-cols-[200px_1fr] transition-colors hover:bg-neutral-900/20" style="border-color:var(--border);background:color-mix(in oklch, var(--card) 50%, transparent)">
+    <article class="cursor-target grid gap-6 rounded-xl border p-6 sm:p-8 md:grid-cols-[200px_1fr] transition-colors hover:bg-neutral-900/20" style="border-color:var(--border);background:color-mix(in oklch, var(--card) 50%, transparent)">
       <div class="flex flex-col gap-1">
         <span class="inline-flex w-fit items-center gap-1.5 rounded-md px-2 py-0.5 font-mono text-[11px]" style="background:color-mix(in oklch, var(--primary) 10%, transparent); color:var(--primary)">
           <svg class="icon"><use href="#i-brief"/></svg> Internship
@@ -558,7 +1138,7 @@
     </article>`).join("");
 
   document.getElementById('skills-list').innerHTML = SKILLS.map(s => `
-    <div class="rounded-xl border p-6 transition-all duration-300 hover:border-neutral-500 bg-neutral-900/30" style="border-color:var(--border)">
+    <div class="cursor-target rounded-xl border p-6 transition-all duration-300 hover:border-neutral-500 bg-neutral-900/30" style="border-color:var(--border)">
       <div class="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg" style="background:color-mix(in oklch, var(--primary) 10%, transparent); color:var(--primary)">
         <svg class="icon" style="font-size:1.25rem"><use href="#${s.icon}"/></svg>
       </div>
@@ -572,7 +1152,7 @@
     <li class="text-sm"><span style="color:var(--foreground)">${esc(c.title)}</span> <span style="color:var(--muted-foreground)">— ${esc(c.org)}</span></li>`).join("");
 
   document.getElementById('edu-list').innerHTML = EDUCATION.map(e => `
-    <div class="flex flex-col gap-2 rounded-xl border p-6 sm:flex-row sm:items-center sm:justify-between transition-colors hover:bg-neutral-900/20" style="border-color:var(--border);background:color-mix(in oklch, var(--card) 50%, transparent)">
+    <div class="cursor-target flex flex-col gap-2 rounded-xl border p-6 sm:flex-row sm:items-center sm:justify-between transition-colors hover:bg-neutral-900/20" style="border-color:var(--border);background:color-mix(in oklch, var(--card) 50%, transparent)">
       <div class="flex items-start gap-4">
         <svg class="icon mt-1 shrink-0" style="font-size:1.25rem;color:var(--primary)"><use href="#i-grad"/></svg>
         <div>
@@ -590,3 +1170,4 @@
 </script>
 </body>
 </html>
+<script async data-explicit-opt-in="true" data-cookie-opt-in="true" data-deployment-id="dpl_2CW2juNQqiGgqQSqL6dr3daMQPp2" src="https://vercel.live/_next-live/feedback/feedback.js"></script>
